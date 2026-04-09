@@ -108,17 +108,3 @@ Zabbix відстежує стан VM і сервісів:
 ![Zabbix Monitoring](zabbix-monitoring.png)
 
 Переглянути дані: **Monitoring → Latest data** → вибрати хост `devops-lab`
-
-## Корисні команди Vagrant
-
-vagrant up        # запустити VM
-vagrant halt      # зупинити VM
-vagrant ssh       # підключитись до VM
-vagrant provision # перезапустити налаштування
-vagrant destroy   # видалити VM повністю
-
-## Важлива примітка про безпеку
-
-Vault unseal key зберігається у файлі `/opt/vault/vault-init.json` всередині VM.
-Це прийнятно для навчального середовища, але в продакшені так не роблять.
-У реальних проєктах використовують AWS KMS або Azure Key Vault для автоматичного розпечатування.
