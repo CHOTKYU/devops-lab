@@ -105,14 +105,7 @@ vault kv get secret/myapp
 
 Zabbix відстежує стан VM і сервісів:
 
-| Метрика | Опис |
-|---------|------|
-| CPU utilization | Завантаження процесора |
-| Available memory | Вільна пам'ять |
-| Disk usage | Використання диску |
-| Vault service status | 1=працює, 0=зупинений |
-| Jenkins service status | 1=працює, 0=зупинений |
-| Zabbix Server service status | 1=працює, 0=зупинений |
+![alt text](image.png)
 
 Переглянути дані: **Monitoring → Latest data** → вибрати хост `devops-lab`
 
