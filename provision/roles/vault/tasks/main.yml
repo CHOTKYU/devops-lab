@@ -1,0 +1,80 @@
+---
+- name: Create vault group
+  group:
+    name: vault
+    system: true
+
+- name: Create vault user
+  user:
+    name: vault
+    group: vault
+    system: true
+    shell: /bin/false
+    home: /opt/vault
+
+- name: Download Vault binary
+  get_url:
+    url: "https://releases.hashicorp.com/vault/1.15.4/vault_1.15.4_linux_amd64.zip"
+    dest: /tmp/vault.zip
+
+- name: Install unzip
+  apt:
+    name: unzip
+    state: present
+
+- name: Unzip Vault binary
+  unarchive:
+    src: /tmp/vault.zip
+    dest: /usr/local/bin/
+    remote_src: true
+    mode: "0755"
+
+- name: Create Vault directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: vault
+    group: vault
+    mode: "0750"
+  loop:
+    - /opt/vault
+    - /opt/vault/data
+    - /etc/vault.d
+
+- name: Deploy Vault config
+  template:
+    src: vault.hcl.j2
+    dest: /etc/vault.d/vault.hcl
+    owner: vault
+    group: vault
+    mode: "0640"
+
+- name: Deploy Vault systemd service
+  template:
+    src: vault.service.j2
+    dest: /etc/systemd/system/vault.service
+    mode: "0644"
+
+- name: Enable and start Vault
+  systemd:
+    name: vault
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Wait for Vault to start
+  wait_for:
+    port: 8200
+    delay: 5
+    timeout: 60
+
+- name: Deploy Vault init script
+  template:
+    src: vault-init.sh.j2
+    dest: /opt/vault/vault-init.sh
+    mode: "0755"
+
+- name: Run Vault init script
+  shell: /opt/vault/vault-init.sh
+  args:
+    creates: /opt/vault/vault-init.json

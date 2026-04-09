@@ -1,0 +1,15 @@
+#!/bin/bash
+
+SERVICE=$1
+
+if [ -z "$SERVICE" ]; then
+  echo "0"
+  exit 1
+fi
+
+# Перевіряємо через systemctl
+if systemctl is-active --quiet "$SERVICE"; then
+  echo "1"
+else
+  echo "0"
+fi

@@ -1,0 +1,13 @@
+---
+- name: DevOps Lab Provisioning
+  hosts: all
+  become: true  # виконувати від root
+
+  vars:
+    vm_ip: "{{ vm_ip | default('192.168.56.10') }}"
+
+  roles:
+    - common    
+    - vault     
+    - jenkins   
+    - zabbix    

@@ -1,0 +1,44 @@
+#!/bin/bash
+set -e
+
+export VAULT_ADDR="http://127.0.0.1:8200"
+INIT_FILE="/opt/vault/vault-init.json"
+
+
+IS_INIT=$(vault status -format=json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['initialized'])" 2>/dev/null || echo "false")
+
+if [ "$IS_INIT" = "False" ] || [ "$IS_INIT" = "false" ]; then
+  echo "Initializing Vault..."
+
+  
+  vault operator init \
+    -key-shares=1 \
+    -key-threshold=1 \
+    -format=json > "$INIT_FILE"
+
+  echo "Vault initialized. Keys saved to $INIT_FILE"
+fi
+
+
+UNSEAL_KEY=$(python3 -c "import json; d=json.load(open('$INIT_FILE')); print(d['unseal_keys_b64'][0])")
+ROOT_TOKEN=$(python3 -c "import json; d=json.load(open('$INIT_FILE')); print(d['root_token'])")
+
+
+IS_SEALED=$(vault status -format=json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin)['sealed'])" 2>/dev/null || echo "true")
+
+if [ "$IS_SEALED" = "True" ] || [ "$IS_SEALED" = "true" ]; then
+  echo "Unsealing Vault..."
+  vault operator unseal "$UNSEAL_KEY"
+  echo "Vault unsealed."
+fi
+
+
+export VAULT_TOKEN="$ROOT_TOKEN"
+
+echo "Writing test secret..."
+vault secrets enable -path=secret kv 2>/dev/null || true
+vault kv put secret/test username="admin" password="testpass123"
+
+echo "Vault is ready!"
+echo "Root token: $ROOT_TOKEN"
+echo "Web UI: http://{{ vm_ip }}:8200"

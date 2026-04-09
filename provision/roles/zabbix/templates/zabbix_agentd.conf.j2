@@ -1,0 +1,17 @@
+
+LogFile=/var/log/zabbix/zabbix_agentd.log
+LogFileSize=10
+PidFile=/run/zabbix/zabbix_agentd.pid
+
+
+Server=127.0.0.1
+ServerActive=127.0.0.1
+Hostname=devops-lab
+
+
+AllowKey=system.run[*]
+
+
+UserParameter=service.vault,/etc/zabbix/service_check.sh vault
+UserParameter=service.jenkins,/etc/zabbix/service_check.sh jenkins
+UserParameter=service.zabbix,/etc/zabbix/service_check.sh zabbix-server

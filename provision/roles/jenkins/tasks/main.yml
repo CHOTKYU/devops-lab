@@ -1,0 +1,55 @@
+---
+- name: Install Java
+  apt:
+    name: openjdk-17-jdk
+    state: present
+
+- name: Add Jenkins repository and key
+  shell: |
+    rm -f /usr/share/keyrings/jenkins-keyring.asc
+    rm -f /usr/share/keyrings/jenkins-keyring.gpg
+    rm -f /etc/apt/sources.list.d/jenkins.list
+    gpg --keyserver keyserver.ubuntu.com --recv-keys 7198F4B714ABFC68
+    gpg --export 7198F4B714ABFC68 | tee /usr/share/keyrings/jenkins-keyring.gpg > /dev/null
+    echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/" | tee /etc/apt/sources.list.d/jenkins.list
+    apt-get update
+
+- name: Install Jenkins
+  apt:
+    name: jenkins
+    state: present
+
+- name: Create Jenkins init directory
+  file:
+    path: /var/lib/jenkins/init.groovy.d
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: "0755"
+
+- name: Deploy Jenkins skip-setup script
+  template:
+    src: basic-security.groovy.j2
+    dest: /var/lib/jenkins/init.groovy.d/basic-security.groovy
+    owner: jenkins
+    group: jenkins
+    mode: "0644"
+
+- name: Configure Jenkins port and options
+  template:
+    src: jenkins.j2
+    dest: /etc/default/jenkins
+    mode: "0644"
+
+- name: Enable and start Jenkins
+  systemd:
+    name: jenkins
+    enabled: true
+    state: restarted
+    daemon_reload: true
+
+- name: Wait for Jenkins to start
+  wait_for:
+    port: 8080
+    delay: 10
+    timeout: 120

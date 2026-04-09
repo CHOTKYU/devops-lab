@@ -1,0 +1,121 @@
+---
+- name: Install dependencies
+  apt:
+    name:
+      - wget
+      - gnupg2
+      - python3-mysqldb
+      - default-mysql-client
+    state: present
+
+- name: Install MariaDB server
+  apt:
+    name:
+      - mariadb-server
+      - mariadb-client
+    state: present
+
+- name: Start MariaDB
+  systemd:
+    name: mariadb
+    enabled: true
+    state: started
+
+- name: Download Zabbix repository package
+  get_url:
+    url: "https://repo.zabbix.com/zabbix/7.0/debian/pool/main/z/zabbix-release/zabbix-release_7.0-1+debian12_all.deb"
+    dest: /tmp/zabbix-release.deb
+
+- name: Install Zabbix repository
+  apt:
+    deb: /tmp/zabbix-release.deb
+
+- name: Update apt cache
+  apt:
+    update_cache: true
+
+- name: Install Zabbix server, frontend and agent
+  apt:
+    name:
+      - zabbix-server-mysql
+      - zabbix-frontend-php
+      - zabbix-apache-conf
+      - zabbix-sql-scripts
+      - zabbix-agent
+    state: present
+
+- name: Create Zabbix MySQL database
+  mysql_db:
+    name: zabbix
+    encoding: utf8mb4
+    collation: utf8mb4_bin
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Create Zabbix MySQL user
+  mysql_user:
+    name: zabbix
+    password: "zabbix_pass"
+    priv: "zabbix.*:ALL"
+    state: present
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: Check if Zabbix schema already imported
+  stat:
+    path: /etc/zabbix/.schema_imported
+  register: schema_imported
+
+- name: Import Zabbix database schema
+  shell: |
+    zcat /usr/share/zabbix-sql-scripts/mysql/server.sql.gz | mysql -uzabbix -pzabbix_pass zabbix
+    touch /etc/zabbix/.schema_imported
+  when: not schema_imported.stat.exists
+
+- name: Deploy Zabbix server config
+  template:
+    src: zabbix_server.conf.j2
+    dest: /etc/zabbix/zabbix_server.conf
+    mode: "0640"
+    owner: zabbix
+    group: zabbix
+
+- name: Deploy Zabbix agent config
+  template:
+    src: zabbix_agentd.conf.j2
+    dest: /etc/zabbix/zabbix_agentd.conf
+    mode: "0640"
+    owner: zabbix
+    group: zabbix
+
+- name: Deploy UserParameters script
+  template:
+    src: service_check.sh.j2
+    dest: /etc/zabbix/service_check.sh
+    mode: "0755"
+    owner: zabbix
+    group: zabbix
+
+- name: Enable and start Zabbix server
+  systemd:
+    name: zabbix-server
+    enabled: true
+    state: restarted
+    daemon_reload: true
+
+- name: Enable and start Zabbix agent
+  systemd:
+    name: zabbix-agent
+    enabled: true
+    state: restarted
+
+- name: Enable and start Apache
+  systemd:
+    name: apache2
+    enabled: true
+    state: restarted
+
+- name: Wait for Zabbix web UI
+  wait_for:
+    port: 80
+    delay: 10
+    timeout: 60
