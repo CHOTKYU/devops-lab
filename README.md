@@ -105,7 +105,7 @@ vault kv get secret/myapp
 
 Zabbix відстежує стан VM і сервісів:
 
-![alt text](image.png)
+![Zabbix Monitoring](zabbix-monitoring.jpg)
 
 Переглянути дані: **Monitoring → Latest data** → вибрати хост `devops-lab`
 
