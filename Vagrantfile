@@ -1,5 +1,4 @@
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
+
 
 VM_IP = "192.168.56.10"
 
